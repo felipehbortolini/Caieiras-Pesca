@@ -30,8 +30,11 @@ Catalogo_Produtos.xlsx  Fonte de dados dos produtos
 
 ## 🔄 Atualizar o catálogo
 
-1. Edite **`Catalogo_Produtos.xlsx`** (colunas: `CATEGORIA | PRODUTO | DESCRIÇÃO | VALOR | PASTA_IMAGENS`).
-   Em `PASTA_IMAGENS`, aponte para a pasta com as fotos do produto (pode ter várias — viram um carrossel).
+1. Edite **`Catalogo_Produtos.xlsx`** (colunas: `CATEGORIA | PRODUTO | DESCRIÇÃO | VALOR | PASTA_IMAGENS | TAG | PRECO_PROMO`).
+   - `PASTA_IMAGENS`: pasta com as fotos do produto (pode ter várias — viram um carrossel/galeria).
+   - `TAG`: `Em estoque` (padrão), `Promoção` ou `Indisponível`.
+     - **Em estoque** → selo verde. **Indisponível** → card esmaecido, sem botão de compra; o pop-up oferece "Consultar no WhatsApp". **Promoção** → selo laranja animado.
+   - `PRECO_PROMO`: preço promocional (só vale se menor que `VALOR`). Aparece riscando o preço cheio, com selo `−%`, e é o valor cobrado no carrinho/WhatsApp. Produtos com promoção entram na seção **Ofertas** da home.
 2. Rode o gerador:
 
    ```bash

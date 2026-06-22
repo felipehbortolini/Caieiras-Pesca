@@ -63,6 +63,35 @@ def slug(value: str) -> str:
     return value.strip("-")
 
 
+def norm(value) -> str:
+    """Normaliza texto p/ comparação: sem acento, maiúsculo, só alfanumérico."""
+    value = unicodedata.normalize("NFKD", str(value or ""))
+    value = value.encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"[^A-Za-z0-9]+", "", value).upper()
+
+
+def find_col(header_norm: list[str], *candidates: str):
+    """Acha índice da coluna cujo cabeçalho começa por algum candidato."""
+    for cand in candidates:
+        for i, h in enumerate(header_norm):
+            if h.startswith(cand):
+                return i
+    return None
+
+
+def normalize_tag(value) -> str:
+    n = norm(value)
+    if not n:
+        return "em-estoque"  # padrão: em estoque
+    if "INDISPON" in n:
+        return "indisponivel"
+    if "PROMO" in n:
+        return "promocao"
+    if "ESTOQUE" in n:
+        return "em-estoque"
+    return "em-estoque"
+
+
 def copy_logos() -> None:
     LOGO_ASSETS.mkdir(parents=True, exist_ok=True)
     for src_name, dst_name in LOGO_MAP.items():
@@ -134,30 +163,66 @@ def main() -> None:
 
     rows = list(ws.iter_rows(values_only=True))
     header = [str(c).strip() if c is not None else "" for c in rows[0]]
+    hn = [norm(c) for c in header]
     print("  colunas:", header)
+
+    col = {
+        "categoria": find_col(hn, "CATEGOR"),
+        "produto": find_col(hn, "PRODUTO"),
+        "descricao": find_col(hn, "DESCRI"),
+        "valor": find_col(hn, "VALOR"),
+        "pasta": find_col(hn, "PASTA"),
+        "tag": find_col(hn, "TAG"),
+        "promo": find_col(hn, "PRECOPROMO", "PROMO"),
+    }
+    if col["tag"] is None or col["promo"] is None:
+        print("  [aviso] colunas TAG/PRECO_PROMO nao encontradas no Excel salvo "
+              "-> usando padrao 'Em estoque' sem promocao. Salve o Excel e rode de novo.")
+
+    def cell(raw, key):
+        i = col[key]
+        return raw[i] if (i is not None and i < len(raw)) else None
+
+    def to_float(v):
+        if v is None or str(v).strip() == "":
+            return None
+        try:
+            return float(str(v).replace("R$", "").replace(".", "").replace(",", ".").strip()) \
+                if isinstance(v, str) else float(v)
+        except (TypeError, ValueError):
+            return None
 
     produtos = []
     for raw in rows[1:]:
         if raw is None or all(c is None for c in raw):
             continue
-        categoria, produto, descricao, valor, pasta = (list(raw) + [None] * 5)[:5]
+        produto = cell(raw, "produto")
         if not produto:
             continue
+        categoria = cell(raw, "categoria")
         cat_slug = slug(categoria)
         prod_slug = slug(produto)
-        imgs = collect_images(Path(str(pasta)), cat_slug, prod_slug)
+        imgs = collect_images(Path(str(cell(raw, "pasta"))), cat_slug, prod_slug)
+        valor = to_float(cell(raw, "valor")) or 0.0
+        promo = to_float(cell(raw, "promo"))
+        tag = normalize_tag(cell(raw, "tag"))
+        # promo só vale se for menor que o valor cheio
+        if promo is not None and not (0 < promo < valor):
+            promo = None
         produtos.append(
             {
                 "id": prod_slug,
                 "categoria": str(categoria).strip(),
                 "categoriaSlug": cat_slug,
                 "nome": str(produto).strip(),
-                "descricao": (str(descricao).strip() if descricao else ""),
-                "valor": float(valor) if valor is not None else 0.0,
+                "descricao": (str(cell(raw, "descricao")).strip() if cell(raw, "descricao") else ""),
+                "valor": valor,
+                "precoPromo": promo,
+                "tag": tag,
                 "imagens": imgs,
             }
         )
-        print(f"  + {produto} ({len(imgs)} imagem(ns))")
+        print(f"  + {produto} [{tag}{', promo ' + str(promo) if promo else ''}] ({len(imgs)} img)")
 
     categorias = [{"nome": c, "slug": slug(c)} for c in CATEGORIAS]
 

@@ -12,6 +12,7 @@
   const $$ = (s, c = document) => Array.from(c.querySelectorAll(s));
   const esc = (s) =>
     String(s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ---- Dados da loja (edite com o endereço real) ---- */
   const STORE = {
@@ -221,23 +222,44 @@
   /* =========================================================
      PRODUTOS
      ========================================================= */
+  function descontoPct(p) {
+    return p.precoPromo ? Math.round((1 - p.precoPromo / p.valor) * 100) : 0;
+  }
+  function tagBadge(p) {
+    if (p.tag === "promocao") {
+      const off = descontoPct(p);
+      return `<span class="tag tag--promo"><span class="tag-shine"></span>${ICON("sparkles")} PROMOÇÃO${off ? ` <b>−${off}%</b>` : ""}</span>`;
+    }
+    if (p.tag === "indisponivel") return `<span class="tag tag--indispo">Indisponível</span>`;
+    return `<span class="tag tag--estoque">${ICON("check")} Em estoque</span>`;
+  }
+  function priceHTML(p, cls) {
+    if (p.precoPromo) {
+      return `<div class="${cls} has-promo"><span class="price-now">${brl(p.precoPromo)}</span><s class="price-old">${brl(p.valor)}</s><small>à vista</small></div>`;
+    }
+    return `<div class="${cls}">${brl(p.valor)}<small>à vista</small></div>`;
+  }
+
   function productCard(p) {
     const imgs = p.imagens && p.imagens.length ? p.imagens : ["assets/logo/isotipo.png"];
     const multi = imgs.length > 1;
-    return `<article class="product-card" id="${p.id}" data-id="${p.id}">
+    const off = p.tag === "indisponivel";
+    return `<article class="product-card${off ? " is-unavailable" : ""}" id="${p.id}" data-id="${p.id}" data-open="${p.id}" tabindex="0" role="button" aria-label="Ver detalhes de ${esc(p.nome)}">
       <div class="pc-media">
         ${imgs.map((src, i) => `<img class="${i === 0 ? "active" : ""}" data-idx="${i}" src="${src}" alt="${esc(p.nome)}" loading="lazy">`).join("")}
+        <div class="pc-tag">${tagBadge(p)}</div>
         <span class="pc-cat">${esc(p.categoria)}</span>
         ${multi ? `<button class="pc-imgnav prev" data-img="prev" aria-label="Imagem anterior">${ICON("chevronLeft")}</button>
         <button class="pc-imgnav next" data-img="next" aria-label="Próxima imagem">${ICON("chevronRight")}</button>
         <div class="pc-dots">${imgs.map((_, i) => `<button data-dot="${i}" class="${i === 0 ? "active" : ""}" aria-label="Imagem ${i + 1}"></button>`).join("")}</div>` : ""}
+        <span class="pc-hint">${ICON("search")} Ver detalhes</span>
       </div>
       <div class="pc-body">
         <h4>${esc(p.nome)}</h4>
         <p>${esc(p.descricao)}</p>
         <div class="pc-foot">
-          <div class="pc-price">${brl(p.valor)}<small>à vista</small></div>
-          <button class="pc-add" data-add="${p.id}" aria-label="Adicionar ${esc(p.nome)} ao carrinho">${ICON("plus")}</button>
+          ${priceHTML(p, "pc-price")}
+          ${off ? "" : `<button class="pc-add" data-add="${p.id}" aria-label="Adicionar ${esc(p.nome)} ao carrinho">${ICON("plus")}</button>`}
         </div>
       </div>
     </article>`;
@@ -254,7 +276,21 @@
   function renderHomeCategories() {
     const host = $("#home-categories");
     if (!host) return;
-    const blocks = DATA.categorias
+
+    let blocks = "";
+
+    // Bloco de Ofertas (produtos em promoção) em destaque no topo
+    const promos = DATA.produtos.filter((p) => p.precoPromo && p.tag !== "indisponivel");
+    if (promos.length) {
+      blocks += `<div class="cat-block ofertas reveal">
+        <div class="cat-head">
+          <h3>${ICON("sparkles")} Ofertas <span class="chip chip-promo">${promos.length} em promoção</span></h3>
+        </div>
+        ${carousel(promos)}
+      </div>`;
+    }
+
+    blocks += DATA.categorias
       .filter((c) => countByCat[c.slug] > 0)
       .map((c) => {
         const prods = DATA.produtos.filter((p) => p.categoriaSlug === c.slug);
@@ -335,6 +371,146 @@
   function setCardImage(imgs, dots, idx) {
     imgs.forEach((im, i) => im.classList.toggle("active", i === idx));
     dots.forEach((d, i) => d.classList.toggle("active", i === idx));
+  }
+
+  /* =========================================================
+     POP-UP DE PRODUTO (detalhe + galeria + zoom)
+     ========================================================= */
+  let PM = { id: null, idx: 0, qty: 1 };
+
+  function buildProductModal() {
+    const el = document.createElement("div");
+    el.className = "modal-wrap product-modal";
+    el.id = "product-modal";
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-modal", "true");
+    el.innerHTML = `
+      <div class="modal-bg" data-product-close></div>
+      <div class="pm-card">
+        <button class="modal-close" data-product-close aria-label="Fechar">${ICON("close")}</button>
+        <div class="pm-gallery">
+          <div class="pm-main" id="pm-main">
+            <img id="pm-img" alt="">
+            <button class="pm-nav prev" data-pm="prev" aria-label="Imagem anterior">${ICON("chevronLeft")}</button>
+            <button class="pm-nav next" data-pm="next" aria-label="Próxima imagem">${ICON("chevronRight")}</button>
+            <div class="pm-tag" id="pm-tag"></div>
+            <span class="pm-zoomhint">${ICON("search")} ampliar</span>
+          </div>
+          <div class="pm-thumbs" id="pm-thumbs"></div>
+        </div>
+        <div class="pm-info">
+          <span class="pm-cat" id="pm-cat"></span>
+          <h3 id="pm-name"></h3>
+          <div class="pm-price" id="pm-price"></div>
+          <p class="pm-desc" id="pm-desc"></p>
+          <div class="pm-actions" id="pm-actions"></div>
+          <div class="pm-trust">${ICON("whatsapp")} Dúvidas e fechamento pelo WhatsApp · retirada ou entrega combinada</div>
+        </div>
+      </div>`;
+    document.body.appendChild(el);
+
+    // Zoom seguindo o cursor (desktop); toque alterna o zoom
+    const main = $("#pm-main", el);
+    const img = $("#pm-img", el);
+    main.addEventListener("mousemove", (e) => {
+      const r = main.getBoundingClientRect();
+      img.style.transformOrigin = `${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`;
+      main.classList.add("zooming");
+    });
+    main.addEventListener("mouseleave", () => main.classList.remove("zooming"));
+    main.addEventListener("click", () => {
+      if (matchMedia("(hover: none)").matches) main.classList.toggle("zooming");
+    });
+  }
+
+  function pmImages() {
+    const p = byProd(PM.id);
+    return p && p.imagens && p.imagens.length ? p.imagens : ["assets/logo/isotipo.png"];
+  }
+  function byProd(id) { return DATA.produtos.find((x) => x.id === id); }
+
+  function pmRender() {
+    const imgs = pmImages();
+    PM.idx = (PM.idx + imgs.length) % imgs.length;
+    const img = $("#pm-img");
+    img.src = imgs[PM.idx];
+    const multi = imgs.length > 1;
+    $("#pm-main").classList.toggle("single", !multi);
+    $("#pm-thumbs").innerHTML = multi
+      ? imgs.map((s, i) => `<button class="pm-thumb${i === PM.idx ? " active" : ""}" data-pmthumb="${i}" aria-label="Foto ${i + 1}"><img src="${s}" alt=""></button>`).join("")
+      : "";
+  }
+
+  function openProduct(id) {
+    const p = byProd(id);
+    if (!p) return;
+    PM = { id, idx: 0, qty: 1 };
+    $("#pm-cat").textContent = p.categoria;
+    $("#pm-name").textContent = p.nome;
+    $("#pm-desc").textContent = p.descricao || "";
+    $("#pm-img").alt = p.nome;
+    $("#pm-tag").innerHTML = tagBadge(p);
+    $("#pm-price").className = "pm-price" + (p.precoPromo ? " has-promo" : "");
+    $("#pm-price").innerHTML = p.precoPromo
+      ? `<span class="price-now">${brl(p.precoPromo)}</span><s class="price-old">${brl(p.valor)}</s>${descontoPct(p) ? `<span class="price-off">−${descontoPct(p)}%</span>` : ""}`
+      : `${brl(p.valor)}`;
+    if (p.tag === "indisponivel") {
+      const msg = encodeURIComponent(`Olá! Tenho interesse no produto "${p.nome}". Está disponível?`);
+      $("#pm-actions").innerHTML = `<a class="btn btn-whats btn-block" href="https://wa.me/${STORE.phoneRaw}?text=${msg}" target="_blank" rel="noopener">${ICON("whatsapp")} Consultar no WhatsApp</a>`;
+    } else {
+      $("#pm-actions").innerHTML = `
+        <div class="qty pm-qty">
+          <button data-pmqty="-1" aria-label="Diminuir">${ICON("minus")}</button>
+          <span id="pm-qtyval">1</span>
+          <button data-pmqty="1" aria-label="Aumentar">${ICON("plus")}</button>
+        </div>
+        <button class="btn btn-primary btn-block" data-pm-add="${id}">${ICON("cart")} Adicionar ao carrinho</button>`;
+    }
+    pmRender();
+    window.__modalOpen = true;
+    $("#product-modal").classList.add("open");
+    $("#scrim")?.classList.add("show");
+    document.body.style.overflow = "hidden";
+  }
+  function closeProduct() {
+    window.__modalOpen = false;
+    $("#product-modal")?.classList.remove("open");
+    $("#pm-main")?.classList.remove("zooming");
+    if (!$(".cart-drawer.open") && !$(".mobile-sheet.open")) {
+      $("#scrim")?.classList.remove("show");
+      document.body.style.overflow = "";
+    }
+  }
+  function pmNav(dir) { PM.idx += dir === "next" ? 1 : -1; pmRender(); }
+  function pmSetQty(d) {
+    PM.qty = Math.max(1, PM.qty + d);
+    const el = $("#pm-qtyval"); if (el) el.textContent = PM.qty;
+  }
+  function pmAdd(id) {
+    Cart.add(id, PM.qty);
+    PM.qty = 1; const el = $("#pm-qtyval"); if (el) el.textContent = 1;
+  }
+
+  /* Auto-troca de fotos (7s): pausa em hover, com pop-up aberto e fora da tela */
+  function initAutoRotate() {
+    if (REDUCE) return;
+    const cards = $$(".product-card").filter((c) => $$(".pc-media img", c).length > 1);
+    if (!cards.length) return;
+    cards.forEach((c) => {
+      c._paused = false;
+      c._vis = false;
+      c.addEventListener("mouseenter", () => (c._paused = true));
+      c.addEventListener("mouseleave", () => (c._paused = false));
+    });
+    const io = new IntersectionObserver(
+      (es) => es.forEach((e) => (e.target._vis = e.isIntersecting)),
+      { threshold: 0.35 }
+    );
+    cards.forEach((c) => io.observe(c));
+    setInterval(() => {
+      if (window.__modalOpen) return;
+      cards.forEach((c) => { if (!c._paused && c._vis) cardImageNav(c, "next"); });
+    }, 7000);
   }
 
   /* =========================================================
@@ -715,7 +891,7 @@
 
   function wireEvents() {
     document.addEventListener("click", (e) => {
-      const t = e.target.closest("[data-add],[data-cart-open],[data-cart-close],[data-checkout],[data-checkout-close],[data-checkout-confirm],[data-menu-open],[data-menu-close],[data-search-open],[data-search-close],[data-scroll],[data-img],[data-dot],[data-act]");
+      const t = e.target.closest("[data-add],[data-cart-open],[data-cart-close],[data-checkout],[data-checkout-close],[data-checkout-confirm],[data-menu-open],[data-menu-close],[data-search-open],[data-search-close],[data-scroll],[data-img],[data-dot],[data-act],[data-open],[data-product-close],[data-pm],[data-pmthumb],[data-pm-add],[data-pmqty]");
       if (!t) return;
 
       if (t.hasAttribute("data-add")) {
@@ -744,6 +920,14 @@
         return;
       }
 
+      // pop-up de produto
+      if (t.hasAttribute("data-open")) return openProduct(t.getAttribute("data-open"));
+      if (t.hasAttribute("data-product-close")) return closeProduct();
+      if (t.hasAttribute("data-pm")) return pmNav(t.getAttribute("data-pm"));
+      if (t.hasAttribute("data-pmthumb")) { PM.idx = +t.getAttribute("data-pmthumb"); return pmRender(); }
+      if (t.hasAttribute("data-pmqty")) return pmSetQty(+t.getAttribute("data-pmqty"));
+      if (t.hasAttribute("data-pm-add")) return pmAdd(t.getAttribute("data-pm-add"));
+
       // qty / remove no carrinho
       if (t.hasAttribute("data-act")) {
         const id = t.closest(".cart-item")?.getAttribute("data-id");
@@ -756,16 +940,25 @@
     });
 
     // fechar pelo scrim
-    $("#scrim")?.addEventListener("click", () => { Cart.close(); closeMenu(); });
+    $("#scrim")?.addEventListener("click", () => { Cart.close(); closeMenu(); closeProduct(); });
 
     // busca: input
     document.addEventListener("input", (e) => { if (e.target.id === "search-input") runSearch(e.target.value); });
     $("#checkout-name")?.addEventListener("keydown", (e) => { if (e.key === "Enter") Cart.confirmCheckout(); });
 
-    // ESC fecha tudo
+    // teclado: ESC fecha tudo; setas trocam foto no pop-up; Enter abre card
     document.addEventListener("keydown", (e) => {
-      if (e.key !== "Escape") return;
-      Cart.close(); closeMenu(); Cart.closeCheckout(); closeSearch();
+      if (e.key === "Escape") { Cart.close(); closeMenu(); Cart.closeCheckout(); closeSearch(); closeProduct(); return; }
+      if (window.__modalOpen) {
+        if (e.key === "ArrowLeft") pmNav("prev");
+        else if (e.key === "ArrowRight") pmNav("next");
+        return;
+      }
+      const f = document.activeElement;
+      if (f && f.hasAttribute && f.hasAttribute("data-open") && (e.key === "Enter" || e.key === " ")) {
+        e.preventDefault();
+        openProduct(f.getAttribute("data-open"));
+      }
     });
 
     // header scroll
@@ -782,6 +975,7 @@
     buildHeader();
     buildMobileSheet();
     buildCartChrome();
+    buildProductModal();
     renderHomeCategories();
     renderCategoryPage();
     buildFooter();
@@ -790,6 +984,7 @@
     initHero();
     initReveal();
     initMap();
+    initAutoRotate();
 
     // deep-link para produto (ex.: varas.html#albatroz-agata)
     if (location.hash.length > 1) {

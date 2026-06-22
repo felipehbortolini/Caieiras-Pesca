@@ -17,6 +17,10 @@
   const byId = {};
   DATA.produtos.forEach((p) => (byId[p.id] = p));
 
+  // Preço efetivo: usa promoção quando houver
+  const priceOf = (p) => (p && p.precoPromo ? p.precoPromo : p ? p.valor : 0);
+  window.priceOf = priceOf;
+
   let items = load();
 
   function load() {
@@ -37,11 +41,15 @@
     product: (id) => byId[id],
     items: () => items.slice(),
     count: () => items.reduce((s, it) => s + it.qty, 0),
-    total: () =>
-      items.reduce((s, it) => s + (byId[it.id] ? byId[it.id].valor * it.qty : 0), 0),
+    total: () => items.reduce((s, it) => s + priceOf(byId[it.id]) * it.qty, 0),
+    priceOf: (id) => priceOf(byId[id]),
 
     add(id, qty = 1) {
       if (!byId[id]) return;
+      if (byId[id].tag === "indisponivel") {
+        this.toast("Produto indisponível no momento");
+        return;
+      }
       const found = items.find((it) => it.id === id);
       if (found) found.qty += qty;
       else items.push({ id, qty });
@@ -128,14 +136,14 @@
             <img src="${img}" alt="${esc(p.nome)}" loading="lazy">
             <div class="ci-info">
               <h4>${esc(p.nome)}</h4>
-              <div class="ci-unit">${brl(p.valor)} / un.</div>
+              <div class="ci-unit">${brl(priceOf(p))} / un.${p.precoPromo ? ` <s>${brl(p.valor)}</s>` : ""}</div>
               <div class="ci-bottom">
                 <div class="qty">
                   <button data-act="dec" aria-label="Diminuir">${ICON("minus")}</button>
                   <span>${it.qty}</span>
                   <button data-act="inc" aria-label="Aumentar">${ICON("plus")}</button>
                 </div>
-                <div class="ci-line">${brl(p.valor * it.qty)}</div>
+                <div class="ci-line">${brl(priceOf(p) * it.qty)}</div>
               </div>
               <button class="ci-remove" data-act="remove">${ICON("trash")} Remover</button>
             </div>
@@ -199,8 +207,9 @@
       lines.push("");
       items.forEach((it) => {
         const p = byId[it.id];
+        const promo = p.precoPromo ? " (promo)" : "";
         lines.push(
-          `• ${p.nome} | ${it.qty} un. | ${brl(p.valor)} | ${brl(p.valor * it.qty)}`
+          `• ${p.nome}${promo} | ${it.qty} un. | ${brl(priceOf(p))} | ${brl(priceOf(p) * it.qty)}`
         );
       });
       lines.push("");

@@ -147,7 +147,7 @@ CATEGORY_TEMPLATE = """<!DOCTYPE html>
 """
 
 # Bump a cada deploy para forçar o navegador a baixar CSS/JS novos (anti-cache)
-ASSET_VER = "20260622"
+ASSET_VER = "20260622b"
 
 
 def write_category_pages(categorias: list[dict]) -> None:

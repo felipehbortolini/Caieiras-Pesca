@@ -439,7 +439,7 @@
             <button class="pm-nav prev" data-pm="prev" aria-label="Imagem anterior">${ICON("chevronLeft")}</button>
             <button class="pm-nav next" data-pm="next" aria-label="Próxima imagem">${ICON("chevronRight")}</button>
             <div class="pm-tag" id="pm-tag"></div>
-            <span class="pm-zoomhint">${ICON("search")} ampliar</span>
+            <span class="pm-zoomhint">${ICON("search")} clique para ampliar</span>
           </div>
           <div class="pm-thumbs" id="pm-thumbs"></div>
         </div>
@@ -455,18 +455,23 @@
       </div>`;
     document.body.appendChild(el);
 
-    // Zoom seguindo o cursor (desktop); toque alterna o zoom
+    // Zoom só por clique (toggle). Mousemove apenas faz panorâmica quando ampliado.
+    // Setas (.pm-nav) trocam a foto e NÃO disparam zoom.
     const main = $("#pm-main", el);
     const img = $("#pm-img", el);
-    main.addEventListener("mousemove", (e) => {
+    const setOrigin = (e) => {
       const r = main.getBoundingClientRect();
       img.style.transformOrigin = `${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`;
-      main.classList.add("zooming");
+    };
+    main.addEventListener("click", (e) => {
+      if (e.target.closest(".pm-nav")) return; // botões de navegação: ignora zoom
+      const zoomed = main.classList.toggle("zoomed");
+      if (zoomed) setOrigin(e);
     });
-    main.addEventListener("mouseleave", () => main.classList.remove("zooming"));
-    main.addEventListener("click", () => {
-      if (matchMedia("(hover: none)").matches) main.classList.toggle("zooming");
+    main.addEventListener("mousemove", (e) => {
+      if (main.classList.contains("zoomed")) setOrigin(e);
     });
+    main.addEventListener("mouseleave", () => main.classList.remove("zoomed"));
   }
 
   function pmImages() {
@@ -483,8 +488,11 @@
     img.onload = () => img.classList.add("loaded");
     img.src = imgs[PM.idx];
     if (img.complete) img.classList.add("loaded");
+    const main = $("#pm-main");
+    main.classList.remove("zoomed"); // troca de foto sempre reseta o zoom
+    img.style.transformOrigin = "center";
     const multi = imgs.length > 1;
-    $("#pm-main").classList.toggle("single", !multi);
+    main.classList.toggle("single", !multi);
     $("#pm-thumbs").innerHTML = multi
       ? imgs.map((s, i) => `<button class="pm-thumb${i === PM.idx ? " active" : ""}" data-pmthumb="${i}" aria-label="Foto ${i + 1}"><img src="${s}" alt=""></button>`).join("")
       : "";

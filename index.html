@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caieiras Pesca · Equipamentos para quem vive a pesca</title>
+  <meta name="description" content="Loja de pesca da Grande Vitória/ES. Varas, molinetes, iscas, linhas, vestuário, facas, coolers e acessórios — selecionados por quem cresceu à beira d'água. Peça pelo WhatsApp.">
+  <meta name="theme-color" content="#32699f">
+
+  <meta property="og:title" content="Caieiras Pesca · Equipamentos para quem vive a pesca">
+  <meta property="og:description" content="Da vara ao molinete: o melhor da pesca esportiva com o carinho de filhos de pescador.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/logo/logo-vertical.png">
+
+  <link rel="icon" href="assets/logo/isotipo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="home">
+
+  <!-- ======================= HERO ======================= -->
+  <section class="hero" id="topo">
+    <canvas class="hero-canvas" aria-hidden="true"></canvas>
+    <div class="hero-fade"></div>
+    <div class="hero-inner">
+      <div class="hero-content">
+        <span class="hero-badge">⚓ Loja de pesca · Grande Vitória / ES</span>
+        <h1>Sua próxima grande<br><span class="accent">fisgada</span> começa aqui.</h1>
+        <p>Da vara ao molinete, das iscas aos acessórios — reunimos o melhor da pesca esportiva com o carinho de quem cresceu à beira d'água.</p>
+        <div class="hero-cta">
+          <a class="btn btn-accent" href="#produtos">Explorar catálogo</a>
+          <a class="btn btn-whats" href="https://wa.me/5527996209785" target="_blank" rel="noopener">Falar no WhatsApp</a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat"><strong>8</strong><span>Categorias</span></div>
+          <div class="stat"><strong>100%</strong><span>Paixão pela pesca</span></div>
+          <div class="stat"><strong>ES</strong><span>Grande Vitória</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-hint" aria-hidden="true"><span class="mouse"></span>Role para ver</div>
+  </section>
+
+  <!-- ======================= SOBRE / CONFIANÇA ======================= -->
+  <section class="section trust" id="sobre">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Quem somos</span>
+        <h2>Uma loja que nasceu na beira d'água</h2>
+        <p>A Caieiras Pesca foi criada por filhos de pescador. Mais do que vender equipamentos, a gente divulga e vive a pesca — e quer que cada cliente sinta esse pertencimento.</p>
+      </div>
+      <div class="trust-grid">
+        <div class="trust-item reveal" data-delay="0">
+          <span class="ti-icon" data-i="shield"></span>
+          <div><h4>Curadoria de quem entende</h4><p>Equipamentos testados por quem pesca de verdade, sem enrolação.</p></div>
+        </div>
+        <div class="trust-item reveal" data-delay="1">
+          <span class="ti-icon" data-i="whatsapp"></span>
+          <div><h4>Atendimento direto</h4><p>Tire dúvidas e finalize seu pedido pelo WhatsApp, de pescador pra pescador.</p></div>
+        </div>
+        <div class="trust-item reveal" data-delay="2">
+          <span class="ti-icon" data-i="truck"></span>
+          <div><h4>Retirada ou entrega</h4><p>Combine a retirada na loja ou o envio dos seus produtos com a gente.</p></div>
+        </div>
+        <div class="trust-item reveal" data-delay="3">
+          <span class="ti-icon" data-i="heart"></span>
+          <div><h4>Paixão pela pesca</h4><p>A gente não só vende: a gente vive cada amanhecer no mar.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= PRODUTOS POR CATEGORIA ======================= -->
+  <section class="section" id="produtos">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Catálogo</span>
+        <h2>Explore por categoria</h2>
+        <p>Navegue pelos nossos produtos, monte seu carrinho e finalize a compra pelo WhatsApp. Seu carrinho fica salvo mesmo se você trocar de página.</p>
+      </div>
+      <div id="home-categories"></div>
+    </div>
+  </section>
+
+  <!-- ======================= DEPOIMENTOS ======================= -->
+  <section class="section testimonials" id="depoimentos">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Relatos</span>
+        <h2>O que dizem nossos pescadores</h2>
+        <p>Histórias de quem já levou a Caieiras Pesca pra dentro do barco.</p>
+      </div>
+      <div class="testi-grid">
+        <figure class="testi-card reveal" data-delay="0">
+          <div class="testi-stars" data-stars="5"></div>
+          <blockquote>"Comprei meu molinete e tirei dúvida no WhatsApp na hora. Atendimento de quem realmente pesca. Voltarei com certeza!"</blockquote>
+          <figcaption class="testi-author"><span class="ta-ava">R</span><div><strong>Rafael Andrade</strong><span>Pesca embarcada</span></div></figcaption>
+        </figure>
+        <figure class="testi-card reveal" data-delay="1">
+          <div class="testi-stars" data-stars="5"></div>
+          <blockquote>"A vara Albatroz superou a expectativa. Preço justo e o pessoal entende do assunto. Recomendo de olhos fechados."</blockquote>
+          <figcaption class="testi-author"><span class="ta-ava">J</span><div><strong>Juliana Pires</strong><span>Pesqueiro & lago</span></div></figcaption>
+        </figure>
+        <figure class="testi-card reveal" data-delay="2">
+          <div class="testi-stars" data-stars="5"></div>
+          <blockquote>"Fechei o pedido pelo site em minutos e combinei a retirada na loja. Prático e sem complicação. Top demais!"</blockquote>
+          <figcaption class="testi-author"><span class="ta-ava">M</span><div><strong>Marcos Vinícius</strong><span>Pesca de praia</span></div></figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= MAPA ======================= -->
+  <section class="section map-section" id="mapa">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Onde estamos</span>
+        <h2>Venha tomar um café e falar de pesca</h2>
+        <p>Passe na loja para ver os produtos de pertinho ou chame a gente no WhatsApp.</p>
+      </div>
+      <div class="map-wrap reveal">
+        <div class="map-info">
+          <h3>Caieiras Pesca</h3>
+          <div class="mi-row"><span class="mi-ic" data-i="mapPin"></span><div><strong>Endereço</strong><span>Grande Vitória — Espírito Santo<br>Atualize aqui o endereço completo</span></div></div>
+          <div class="mi-row"><span class="mi-ic" data-i="phone"></span><div><strong>WhatsApp</strong><span>(27) 99620-9785</span></div></div>
+          <div class="mi-row"><span class="mi-ic" data-i="clock"></span><div><strong>Horário</strong><span>Seg a Sáb · 08h às 18h</span></div></div>
+          <a class="btn btn-accent" id="maps-link" href="#" target="_blank" rel="noopener">Como chegar</a>
+        </div>
+        <div id="map"></div>
+      </div>
+    </div>
+  </section>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="js/icons.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    // ícones decorativos + estrelas + link do mapa (após o ICON estar disponível)
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll("[data-i]").forEach(function (el) { el.innerHTML = ICON(el.getAttribute("data-i")); });
+      document.querySelectorAll("[data-stars]").forEach(function (el) {
+        var n = +el.getAttribute("data-stars"); el.innerHTML = Array.from({ length: n }, function () { return ICON("star"); }).join("");
+      });
+      var ml = document.getElementById("maps-link");
+      if (ml) ml.href = "https://www.google.com/maps/search/?api=1&query=-20.3155,-40.3128";
+    });
+  </script>
+</body>
+</html>

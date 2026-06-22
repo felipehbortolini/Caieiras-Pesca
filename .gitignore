@@ -1,0 +1,14 @@
+# Ferramentas / internos (não publicar)
+.agents/
+.codex/
+.claude/
+.impeccable/
+skills-lock.json
+Componentes.md
+Instruções.txt
+
+# Sistema operacional
+Thumbs.db
+desktop.ini
+.DS_Store
+*.tmp

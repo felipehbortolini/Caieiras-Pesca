@@ -19,12 +19,11 @@
     tagline: "Feito por filhos de pescador, pra quem vive a pesca.",
     phoneDisplay: "(27) 99620-9785",
     phoneRaw: "5527996209785",
-    addressLine: "Grande Vitória — Espírito Santo",
-    addressDetail: "Atualize aqui o endereço completo da loja",
-    hours: "Seg a Sáb · 08h às 18h",
-    // TODO: troque pelas coordenadas reais da loja
-    lat: -20.3155,
-    lng: -40.3128,
+    addressLine: "Rua Felicidade Correa dos Santos, 910",
+    addressDetail: "São Pedro · Vitória — ES",
+    hours: "Seg a Sáb · 08h às 19h · Dom até 17h",
+    lat: -20.2801272,
+    lng: -40.3344564,
     get mapsUrl() {
       return `https://www.google.com/maps/search/?api=1&query=${this.lat},${this.lng}`;
     },
@@ -493,90 +492,127 @@
       ctx.restore();
     }
 
-    // Pescador no barco (silhueta inspirada na logo) com balanço do vento
-    // e anzol que entra e sai do mar.
+    // Pescador DENTRO do barco, que repousa SOBRE o mar (parte submersa do
+    // casco é encoberta pela água). Balanço suave do vento + anzol que
+    // entra e sai do mar.
     function fisherman(t) {
       const scale = Math.max(0.7, Math.min(1.5, H / 700));
       const cx = W * 0.58;
-      const baseY = horizon + 6;
-      const bob = Math.sin(t * 0.0016) * 4 * scale;
-      const sway = Math.sin(t * 0.0012) * 0.025;
-      const cy = baseY + bob;
+      const bob = Math.sin(t * 0.0018) * 3 * scale; // sobe/desce na água (y=0 = linha d'água)
+      const sway = Math.sin(t * 0.0012) * 0.018;     // jogo do vento
 
       ctx.save();
-      ctx.translate(cx, cy);
+      ctx.translate(cx, horizon + bob);
       ctx.rotate(sway);
       ctx.scale(scale, scale);
-      ctx.fillStyle = "#3a2a12";
-      ctx.strokeStyle = "#3a2a12";
 
-      // casco do barco
-      ctx.beginPath();
-      ctx.moveTo(-92, -6);
-      ctx.quadraticCurveTo(0, 30, 92, -6);
-      ctx.quadraticCurveTo(70, 6, 0, 8);
-      ctx.quadraticCurveTo(-70, 6, -92, -6);
-      ctx.fill();
+      const DARK = "#33240f";
+      const halfW = 98;
+      const gun = -15; // borda do barco (acima da linha d'água)
+      const keel = 17; // fundo do casco (abaixo da linha d'água)
 
-      // corpo sentado
+      const hullPath = () => {
+        ctx.beginPath();
+        ctx.moveTo(-halfW, gun);
+        ctx.quadraticCurveTo(0, gun + 8, halfW, gun);              // borda interna (rim)
+        ctx.quadraticCurveTo(halfW * 0.6, keel, 0, keel + 2);      // casco -> fundo (dir)
+        ctx.quadraticCurveTo(-halfW * 0.6, keel, -halfW, gun);     // fundo -> casco (esq)
+        ctx.closePath();
+      };
+
+      // ---- PESCADOR (desenhado ANTES do casco p/ ficar dentro do barco) ----
+      ctx.fillStyle = DARK;
+      ctx.strokeStyle = DARK;
+      // tronco sentado, inclinado p/ o mar (esquerda); quadril some atrás da borda
       ctx.beginPath();
-      ctx.moveTo(8, -8);
-      ctx.quadraticCurveTo(2, -42, 16, -50);
-      ctx.lineTo(26, -50);
-      ctx.quadraticCurveTo(34, -36, 30, -8);
+      ctx.moveTo(-6, -2);
+      ctx.quadraticCurveTo(-12, -44, 2, -54);
+      ctx.lineTo(14, -55);
+      ctx.quadraticCurveTo(24, -38, 20, -2);
       ctx.closePath();
       ctx.fill();
       // cabeça
       ctx.beginPath();
-      ctx.arc(22, -58, 7, 0, Math.PI * 2);
+      ctx.arc(7, -62, 7, 0, Math.PI * 2);
       ctx.fill();
-      // chapéu
+      // chapéu (aba + copa)
       ctx.beginPath();
-      ctx.ellipse(22, -64, 14, 3.4, 0, 0, Math.PI * 2);
+      ctx.ellipse(6, -68, 15, 3.6, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.beginPath();
-      ctx.ellipse(22, -67, 6.5, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(8, -71, 7, 5.5, 0, 0, Math.PI * 2);
       ctx.fill();
-      // braço + vara
-      const rodTipX = -52, rodTipY = -54;
-      ctx.lineWidth = 2.4;
+      // braço estendido + vara
+      const rodTipX = -70, rodTipY = -62;
+      ctx.lineWidth = 2.6;
       ctx.beginPath();
-      ctx.moveTo(18, -34);
-      ctx.lineTo(2, -42);
+      ctx.moveTo(2, -40);
+      ctx.lineTo(-14, -46);
       ctx.stroke();
-      ctx.lineWidth = 2.8;
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(4, -40);
-      ctx.quadraticCurveTo(-28, -52, rodTipX, rodTipY);
+      ctx.moveTo(-12, -44);
+      ctx.quadraticCurveTo(-42, -58, rodTipX, rodTipY);
       ctx.stroke();
 
-      // linha + anzol entrando/saindo do mar
+      // ---- CASCO (cobre o quadril/pernas: pescador fica "dentro") ----
+      ctx.fillStyle = DARK;
+      hullPath();
+      ctx.fill();
+
+      // ---- PARTE SUBMERSA: a água encobre o casco abaixo da linha d'água ----
+      ctx.save();
+      hullPath();
+      ctx.clip();
+      const sub = ctx.createLinearGradient(0, 0, 0, keel + 8);
+      sub.addColorStop(0, "rgba(31,75,114,0.72)");
+      sub.addColorStop(1, "rgba(19,55,79,0.95)");
+      ctx.fillStyle = sub;
+      ctx.fillRect(-halfW - 6, 0, (halfW + 6) * 2, keel + 30);
+      ctx.restore();
+
+      // borda do barco (gunwale) — leve realce quente, sem glow
+      ctx.strokeStyle = "rgba(211,127,39,0.5)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-halfW + 5, gun + 1);
+      ctx.quadraticCurveTo(0, gun + 8, halfW - 5, gun + 1);
+      ctx.stroke();
+
+      // linha d'água batendo no casco (espuminha)
+      ctx.strokeStyle = "rgba(203,222,242,0.45)";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(-halfW + 4, 0.5);
+      ctx.quadraticCurveTo(0, 2.5 + Math.sin(t * 0.004) * 0.8, halfW - 4, 0.5);
+      ctx.stroke();
+
+      // ---- LINHA + ANZOL entrando e saindo do mar ----
       const dip = Math.sin(t * 0.0022);
-      const surfaceY = -6;
-      const hookY = surfaceY + 14 + dip * 18; // oscila acima/abaixo da linha d'água
-      const hookX = rodTipX - 6 + Math.sin(t * 0.0012) * 4;
+      const hookX = rodTipX - 4 + Math.sin(t * 0.0013) * 4;
+      const hookY = 4 + dip * 15; // oscila em torno da linha d'água (y=0)
       ctx.lineWidth = 1;
-      ctx.strokeStyle = "rgba(58,42,18,0.85)";
+      ctx.strokeStyle = "rgba(40,28,12,0.8)";
       ctx.beginPath();
       ctx.moveTo(rodTipX, rodTipY);
       ctx.quadraticCurveTo(rodTipX - 4, (rodTipY + hookY) / 2, hookX, hookY);
       ctx.stroke();
       ctx.fillStyle = "#eec81d";
       ctx.beginPath();
-      ctx.arc(hookX, hookY, 2.4, 0, Math.PI * 2);
+      ctx.arc(hookX, hookY, 2.2, 0, Math.PI * 2);
       ctx.fill();
-      ctx.restore();
 
-      // respingo quando o anzol mergulha
-      if (dip > 0.86) {
-        const wx = cx + (hookX) * scale, wy = baseY + bob + 8 * scale;
-        ctx.strokeStyle = "rgba(203,222,242,0.5)";
+      // respingo quando o anzol toca/mergulha
+      if (dip > 0.8) {
+        const rr = (dip - 0.8) * 70;
+        ctx.strokeStyle = "rgba(203,222,242,0.55)";
         ctx.lineWidth = 1.2;
-        const rr = (dip - 0.86) * 60;
         ctx.beginPath();
-        ctx.ellipse(wx, wy, rr, rr * 0.35, 0, 0, Math.PI * 2);
+        ctx.ellipse(hookX, 1, rr, rr * 0.32, 0, 0, Math.PI * 2);
         ctx.stroke();
       }
+
+      ctx.restore();
     }
 
     let raf = null;

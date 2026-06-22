@@ -85,7 +85,7 @@ def normalize_tag(value) -> str:
         return "em-estoque"  # padrão: em estoque
     if "INDISPON" in n:
         return "indisponivel"
-    if "PROMO" in n:
+    if "PROMO" in n or "OFERTA" in n:
         return "promocao"
     if "ESTOQUE" in n:
         return "em-estoque"
@@ -129,7 +129,7 @@ CATEGORY_TEMPLATE = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v={ver}">
 </head>
 <body data-page="categoria" data-categoria="{slug}">
   <section class="cat-hero">
@@ -138,20 +138,24 @@ CATEGORY_TEMPLATE = """<!DOCTYPE html>
   <section class="section" style="padding-top:0">
     <div class="container" id="category-content"></div>
   </section>
-  <script src="js/icons.js"></script>
-  <script src="js/data.js"></script>
-  <script src="js/cart.js"></script>
-  <script src="js/ui.js"></script>
+  <script src="js/icons.js?v={ver}"></script>
+  <script src="js/data.js?v={ver}"></script>
+  <script src="js/cart.js?v={ver}"></script>
+  <script src="js/ui.js?v={ver}"></script>
 </body>
 </html>
 """
+
+# Bump a cada deploy para forçar o navegador a baixar CSS/JS novos (anti-cache)
+ASSET_VER = "20260622"
 
 
 def write_category_pages(categorias: list[dict]) -> None:
     for c in categorias:
         page = ROOT / f"{c['slug']}.html"
         page.write_text(
-            CATEGORY_TEMPLATE.format(nome=c["nome"], slug=c["slug"]), encoding="utf-8"
+            CATEGORY_TEMPLATE.format(nome=c["nome"], slug=c["slug"], ver=ASSET_VER),
+            encoding="utf-8",
         )
     print(f"  paginas de categoria geradas: {len(categorias)}")
 

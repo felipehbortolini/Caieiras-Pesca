@@ -175,11 +175,15 @@
         </div>
         <div class="cart-items" id="cart-body"></div>
         <div class="cart-foot" id="cart-foot">
+          <textarea id="cart-obs" class="cart-obs" rows="2" placeholder="Observação do pedido (opcional) — ex.: cor, tamanho, ponto de retirada..."></textarea>
           <div class="row"><span class="text-muted">Itens</span><span id="cart-total-count">0 itens</span></div>
           <div class="row total"><span>Total</span><strong id="cart-total-value">R$ 0,00</strong></div>
           <div class="cart-actions">
             <button class="btn btn-whats btn-block" data-checkout>${ICON("whatsapp")} Finalizar no WhatsApp</button>
-            <button class="btn btn-ghost btn-block" data-cart-close>Continuar comprando</button>
+            <div class="cart-foot-row">
+              <button class="btn btn-ghost" data-cart-close>Continuar</button>
+              <button class="btn btn-ghost cart-clear" data-cart-clear>${ICON("trash")} Limpar carrinho</button>
+            </div>
           </div>
         </div>
       </aside>
@@ -248,7 +252,7 @@
       <div class="pc-media">
         ${imgs.map((src, i) => `<img class="${i === 0 ? "active" : ""}" data-idx="${i}" src="${src}" alt="${esc(p.nome)}" loading="lazy">`).join("")}
         <div class="pc-tag">${tagBadge(p)}</div>
-        <span class="pc-cat">${esc(p.categoria)}</span>
+        ${p.precoPromo ? `<span class="pc-discount">−${descontoPct(p)}%</span>` : ""}
         ${multi ? `<button class="pc-imgnav prev" data-img="prev" aria-label="Imagem anterior">${ICON("chevronLeft")}</button>
         <button class="pc-imgnav next" data-img="next" aria-label="Próxima imagem">${ICON("chevronRight")}</button>
         <div class="pc-dots">${imgs.map((_, i) => `<button data-dot="${i}" class="${i === 0 ? "active" : ""}" aria-label="Imagem ${i + 1}"></button>`).join("")}</div>` : ""}
@@ -335,7 +339,48 @@
         <a class="btn btn-whats" href="https://wa.me/${STORE.phoneRaw}" target="_blank" rel="noopener">${ICON("whatsapp")} Perguntar no WhatsApp</a>
       </div>`;
     } else {
-      host.innerHTML = `<div class="product-grid">${prods.map(productCard).join("")}</div>`;
+      const hasPromo = prods.some((p) => p.precoPromo);
+      host.innerHTML = `
+        <div class="cat-toolbar">
+          <div class="filters" id="cat-filters">
+            <button class="fchip active" data-filter="todos">Todos</button>
+            <button class="fchip" data-filter="em-estoque">Em estoque</button>
+            ${hasPromo ? `<button class="fchip" data-filter="promocao">${ICON("sparkles")} Promoção</button>` : ""}
+          </div>
+          <label class="sortbox">${ICON("compass")} Ordenar
+            <select id="cat-sort">
+              <option value="rel">Relevância</option>
+              <option value="menor">Menor preço</option>
+              <option value="maior">Maior preço</option>
+              <option value="az">Nome (A–Z)</option>
+            </select>
+          </label>
+        </div>
+        <div class="product-grid" id="cat-grid"></div>`;
+
+      let filtro = "todos", ordem = "rel";
+      const price = (p) => (window.priceOf ? window.priceOf(p) : p.valor);
+      const applyRender = () => {
+        let list = prods.slice();
+        if (filtro === "promocao") list = list.filter((p) => p.precoPromo);
+        else if (filtro === "em-estoque") list = list.filter((p) => p.tag === "em-estoque");
+        if (ordem === "menor") list.sort((a, b) => price(a) - price(b));
+        else if (ordem === "maior") list.sort((a, b) => price(b) - price(a));
+        else if (ordem === "az") list.sort((a, b) => a.nome.localeCompare(b.nome, "pt"));
+        const grid = $("#cat-grid");
+        grid.innerHTML = list.length
+          ? list.map(productCard).join("")
+          : `<p class="text-muted" style="grid-column:1/-1;text-align:center;padding:40px">Nenhum produto com esse filtro.</p>`;
+      };
+      applyRender();
+      $("#cat-sort").addEventListener("change", (e) => { ordem = e.target.value; applyRender(); });
+      $("#cat-filters").addEventListener("click", (e) => {
+        const b = e.target.closest("[data-filter]");
+        if (!b) return;
+        filtro = b.getAttribute("data-filter");
+        $$(".fchip", $("#cat-filters")).forEach((x) => x.classList.toggle("active", x === b));
+        applyRender();
+      });
     }
   }
 
@@ -405,6 +450,7 @@
           <p class="pm-desc" id="pm-desc"></p>
           <div class="pm-actions" id="pm-actions"></div>
           <div class="pm-trust">${ICON("whatsapp")} Dúvidas e fechamento pelo WhatsApp · retirada ou entrega combinada</div>
+          <div class="pm-related" id="pm-related"></div>
         </div>
       </div>`;
     document.body.appendChild(el);
@@ -433,7 +479,10 @@
     const imgs = pmImages();
     PM.idx = (PM.idx + imgs.length) % imgs.length;
     const img = $("#pm-img");
+    img.classList.remove("loaded");
+    img.onload = () => img.classList.add("loaded");
     img.src = imgs[PM.idx];
+    if (img.complete) img.classList.add("loaded");
     const multi = imgs.length > 1;
     $("#pm-main").classList.toggle("single", !multi);
     $("#pm-thumbs").innerHTML = multi
@@ -466,11 +515,27 @@
         </div>
         <button class="btn btn-primary btn-block" data-pm-add="${id}">${ICON("cart")} Adicionar ao carrinho</button>`;
     }
+    renderRelated(p);
     pmRender();
+    $("#pm-info-scroll") || $(".pm-info")?.scrollTo(0, 0);
     window.__modalOpen = true;
     $("#product-modal").classList.add("open");
     $("#scrim")?.classList.add("show");
     document.body.style.overflow = "hidden";
+  }
+  function renderRelated(p) {
+    const box = $("#pm-related");
+    if (!box) return;
+    const rel = DATA.produtos.filter((x) => x.categoriaSlug === p.categoriaSlug && x.id !== p.id).slice(0, 4);
+    box.innerHTML = rel.length
+      ? `<h4 class="pm-rel-title">Da mesma categoria</h4>
+        <div class="pm-rel-list">${rel.map((r) => `
+          <button class="pm-rel" data-open="${r.id}" aria-label="Ver ${esc(r.nome)}">
+            <img src="${(r.imagens && r.imagens[0]) || "assets/logo/isotipo.png"}" alt="" loading="lazy">
+            <span class="pm-rel-name">${esc(r.nome)}</span>
+            <span class="pm-rel-price">${brl(window.priceOf ? window.priceOf(r) : r.valor)}</span>
+          </button>`).join("")}</div>`
+      : "";
   }
   function closeProduct() {
     window.__modalOpen = false;
@@ -891,7 +956,7 @@
 
   function wireEvents() {
     document.addEventListener("click", (e) => {
-      const t = e.target.closest("[data-add],[data-cart-open],[data-cart-close],[data-checkout],[data-checkout-close],[data-checkout-confirm],[data-menu-open],[data-menu-close],[data-search-open],[data-search-close],[data-scroll],[data-img],[data-dot],[data-act],[data-open],[data-product-close],[data-pm],[data-pmthumb],[data-pm-add],[data-pmqty]");
+      const t = e.target.closest("[data-add],[data-cart-open],[data-cart-close],[data-cart-clear],[data-checkout],[data-checkout-close],[data-checkout-confirm],[data-menu-open],[data-menu-close],[data-search-open],[data-search-close],[data-scroll],[data-img],[data-dot],[data-act],[data-open],[data-product-close],[data-pm],[data-pmthumb],[data-pm-add],[data-pmqty]");
       if (!t) return;
 
       if (t.hasAttribute("data-add")) {
@@ -904,6 +969,7 @@
       }
       if (t.hasAttribute("data-cart-open")) return Cart.open();
       if (t.hasAttribute("data-cart-close")) return Cart.close();
+      if (t.hasAttribute("data-cart-clear")) { if (Cart.count() && confirm("Limpar todo o carrinho?")) Cart.clear(); return; }
       if (t.hasAttribute("data-checkout")) return Cart.startCheckout();
       if (t.hasAttribute("data-checkout-close")) return Cart.closeCheckout();
       if (t.hasAttribute("data-checkout-confirm")) return Cart.confirmCheckout();
@@ -943,7 +1009,10 @@
     $("#scrim")?.addEventListener("click", () => { Cart.close(); closeMenu(); closeProduct(); });
 
     // busca: input
-    document.addEventListener("input", (e) => { if (e.target.id === "search-input") runSearch(e.target.value); });
+    document.addEventListener("input", (e) => {
+      if (e.target.id === "search-input") runSearch(e.target.value);
+      else if (e.target.id === "cart-obs") Cart.setObs(e.target.value);
+    });
     $("#checkout-name")?.addEventListener("keydown", (e) => { if (e.key === "Enter") Cart.confirmCheckout(); });
 
     // teclado: ESC fecha tudo; setas trocam foto no pop-up; Enter abre card

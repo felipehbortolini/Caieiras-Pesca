@@ -21,7 +21,9 @@
   const priceOf = (p) => (p && p.precoPromo ? p.precoPromo : p ? p.valor : 0);
   window.priceOf = priceOf;
 
+  const OBS_KEY = "caieiras_obs_v1";
   let items = load();
+  let obs = localStorage.getItem(OBS_KEY) || "";
 
   function load() {
     try {
@@ -71,6 +73,8 @@
     dec(id) { const it = items.find((i) => i.id === id); if (it) this.setQty(id, it.qty - 1); },
     remove(id) { items = items.filter((it) => it.id !== id); persist(); this.render(); },
     clear() { items = []; persist(); this.render(); },
+    setObs(v) { obs = v; localStorage.setItem(OBS_KEY, obs); },
+    getObs() { return obs; },
 
     /* ---------- Drawer ---------- */
     open() {
@@ -114,6 +118,8 @@
         el.textContent = count;
         el.classList.toggle("show", count > 0);
       });
+      const obsEl = document.getElementById("cart-obs");
+      if (obsEl && document.activeElement !== obsEl) obsEl.value = obs;
       const body = document.getElementById("cart-body");
       const foot = document.getElementById("cart-foot");
       if (!body) return;
@@ -218,6 +224,10 @@
           this.count() === 1 ? "item" : "itens"
         } | ${brl(this.total())}`
       );
+      if (obs && obs.trim()) {
+        lines.push("");
+        lines.push(`Observação: ${obs.trim()}`);
+      }
       lines.push("");
       lines.push(
         "Aguarde que vamos finalizar sua compra e decidirmos qual será a forma de pagamento"

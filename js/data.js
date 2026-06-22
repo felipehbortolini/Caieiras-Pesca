@@ -43,8 +43,8 @@ window.CAIEIRAS_DATA = {
     "nome": "Campbag",
     "descricao": "Bolsa impermeavél",
     "valor": 49.9,
-    "precoPromo": null,
-    "tag": "em-estoque",
+    "precoPromo": 39.9,
+    "tag": "promocao",
     "imagens": [
       "assets/produtos/acessorios-de-pesca/campbag/campbag-1.jpeg",
       "assets/produtos/acessorios-de-pesca/campbag/campbag-2.jpeg"
@@ -73,7 +73,8 @@ window.CAIEIRAS_DATA = {
     "precoPromo": null,
     "tag": "em-estoque",
     "imagens": [
-      "assets/produtos/molinetes/molinete-shimano/molinete-shimano-1.jpeg"
+      "assets/produtos/molinetes/molinete-shimano/molinete-shimano-1.jpeg",
+      "assets/produtos/molinetes/molinete-shimano/molinete-shimano-2.jpg"
     ]
   },
   {
@@ -84,9 +85,11 @@ window.CAIEIRAS_DATA = {
     "descricao": "Se tem FX e 2500 no nome é pq é bom",
     "valor": 198.0,
     "precoPromo": null,
-    "tag": "em-estoque",
+    "tag": "indisponivel",
     "imagens": [
-      "assets/produtos/molinetes/molinete-fx2500/molinete-fx2500-1.jpg"
+      "assets/produtos/molinetes/molinete-fx2500/molinete-fx2500-1.jpg",
+      "assets/produtos/molinetes/molinete-fx2500/molinete-fx2500-2.jpeg",
+      "assets/produtos/molinetes/molinete-fx2500/molinete-fx2500-3.jpg"
     ]
   },
   {
@@ -100,7 +103,9 @@ window.CAIEIRAS_DATA = {
     "tag": "em-estoque",
     "imagens": [
       "assets/produtos/molinetes/molinete-shimano-ii/molinete-shimano-ii-1.jpg",
-      "assets/produtos/molinetes/molinete-shimano-ii/molinete-shimano-ii-2.jpg"
+      "assets/produtos/molinetes/molinete-shimano-ii/molinete-shimano-ii-2.jpeg",
+      "assets/produtos/molinetes/molinete-shimano-ii/molinete-shimano-ii-3.jpg",
+      "assets/produtos/molinetes/molinete-shimano-ii/molinete-shimano-ii-4.jpg"
     ]
   },
   {
